@@ -157,37 +157,6 @@ if st.sidebar.checkbox("Visualizar Historial"):
                 st.rerun() 
 
         except:
-            st.sidebar.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #cc0000; font-weight: bold;">⚠️ Error al leer datos.</div>', unsafe_allow_html=True)
+            st.sidebar.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #155724; font-weight: bold;">⚠️ Error al leer datos.</div>', unsafe_allow_html=True)
         finally:
             if conn: conn.close()
-
-# 7. SIDEBAR: MÉTRICAS (CORREGIDO)
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Resumen de Operaciones")
-
-conn_metrics = get_db_connection()
-if conn_metrics:
-    try:
-        cur = conn_metrics.cursor()
-        
-        # Obtenemos total y convertimos explícitamente a entero
-        cur.execute("SELECT COUNT(*) FROM solicitudes")
-        res_total = cur.fetchone()
-        total = int(res_total) if res_total else 0
-        
-        # Obtenemos aprobados y convertimos explícitamente a entero
-        cur.execute("SELECT COUNT(*) FROM solicitudes WHERE estado = 'APROBADO'")
-        res_aprob = cur.fetchone()
-        aprobados = int(res_aprob) if res_aprob else 0
-        
-        cur.close()
-        conn_metrics.close()
-        
-        col_m1, col_m2 = st.sidebar.columns(2)
-        col_m1.metric("Total", total)
-        col_m2.metric("Aprobados", aprobados)
-        
-    except Exception as e:
-        st.sidebar.markdown(f'<div style="color: #ffcccc; font-size: 12px;">⚠️ Error en métricas: {e}</div>', unsafe_allow_html=True)
-else:
-    st.sidebar.markdown('<div style="color: #ffcccc; font-size: 12px;">⚠️ Sin conexión a la DB.</div>', unsafe_allow_html=True)
