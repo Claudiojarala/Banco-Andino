@@ -4,7 +4,9 @@ import os
 import pandas as pd
 from PIL import Image 
 
-# 1. MANEJO DE CREDENCIALES
+# ==========================================
+# 1. CREDENCIALES (Secrets Cloud / Local)
+# ==========================================
 if "DATABASE_URL" in st.secrets:
     DB_URL = st.secrets["DATABASE_URL"]
 else:
@@ -21,48 +23,25 @@ def get_db_connection():
     except:
         return None
 
-st.set_page_config(
-    page_title="Banco Regional Andino - Scoring",
-    layout="centered"
-)
+# ==========================================
+# 2. CONFIGURACIÓN Y ESTILOS
+# ==========================================
+st.set_page_config(page_title="Banco Regional Andino - Scoring", layout="centered")
 
-# 2. ESTILOS CSS
 st.markdown("""
     <style>
     .stApp { background-color: #f4f6f9; }
-    
-    label, h2 {
-        color: #003366 !important;
-        font-weight: 600 !important;
-    }
-    
-    .stTextInput input, .stNumberInput input {
-        color: white !important;
-        -webkit-text-fill-color: white !important;
-    }
-
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] small, [data-testid="stSidebar"] div.stMarkdown {
-        color: white !important;
-    }
-
-    .stButton>button {
-        width: 100%;
-        background-color: #003366; 
-        color: white;
-        border-radius: 6px;
-        height: 3.5rem;
-        font-weight: 600;
-        transition: background-color 0.3s;
-    }
-    
-    .stButton>button:hover {
-        background-color: #00509e;
-        color: white;
-    }
+    label, h2 { color: #003366 !important; font-weight: 600 !important; }
+    .stTextInput input, .stNumberInput input { color: white !important; -webkit-text-fill-color: white !important; }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] small, [data-testid="stSidebar"] div.stMarkdown { color: white !important; }
+    .stButton>button { width: 100%; background-color: #003366; color: white; border-radius: 6px; height: 3.5rem; font-weight: 600; transition: background-color 0.3s; }
+    .stButton>button:hover { background-color: #00509e; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. IDENTIDAD VISUAL
+# ==========================================
+# 3. ENCABEZADO E IMÁGENES
+# ==========================================
 try:
     header_img = Image.open("assets/banco-andino-header.jpg")
     st.image(header_img, use_container_width=True)
@@ -72,21 +51,21 @@ except:
 st.write("---")
 
 col_logo, col_title = st.columns((1, 4))
-
 with col_logo:
     try:
         logo_img = Image.open("assets/banco-andino-logo.jpg")
         st.image(logo_img, width=100)
     except:
         pass
-
 with col_title:
     st.markdown("<h2 style='margin-top: 20px; font-family: sans-serif;'>Evaluación de Riesgo Crediticio</h2>", unsafe_allow_html=True)
 
 st.markdown("<p style='color: #2b2b2b; margin-left: 10px;'>Automatización de scoring con confirmación inmediata.</p>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 4. FORMULARIO
+# ==========================================
+# 4. FORMULARIO DE EVALUACIÓN
+# ==========================================
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     dni_val = st.text_input("DNI del Solicitante", max_chars=8)
@@ -97,7 +76,6 @@ with col_f2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 5. LÓGICA DE EVALUACIÓN
 if st.button("Evaluar Solicitud"):
     if not dni_val or not nombre_val or ingresos_val <= 0:
         st.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 15px; border-radius: 8px; border: 2px solid #cc0000; font-weight: bold; margin-bottom: 15px;">⚠️ Atención: Complete todos los campos requeridos para proceder.</div>', unsafe_allow_html=True)
@@ -125,7 +103,9 @@ if st.button("Evaluar Solicitud"):
         else:
             st.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 15px; border-radius: 8px; border: 2px solid #cc0000; font-weight: bold;">⚠️ Error de conexión: No se pudo alcanzar el servidor de base de datos AWS.</div>', unsafe_allow_html=True)
 
-# 6. SIDEBAR: ADMINISTRACIÓN
+# ==========================================
+# 5. SIDEBAR: ADMINISTRACIÓN (Corregido)
+# ==========================================
 st.sidebar.markdown("### Administración")
 
 if st.sidebar.checkbox("Visualizar Historial"):
@@ -156,6 +136,7 @@ if st.sidebar.checkbox("Visualizar Historial"):
                 st.sidebar.markdown('<div style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 8px; border: 1px solid #155724; font-weight: bold; margin-bottom: 10px;">✅ Registro eliminado.</div>', unsafe_allow_html=True)
                 st.rerun() 
 
-       except Exception as e:
-            st.sidebar.markdown(f'<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #cc0000; font-weight: bold;">⚠️ Error al leer datos: {e}</div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.sidebar.markdown(f'<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #cc0000; font-weight: bold;">⚠️ Error: {e}</div>', unsafe_allow_html=True)
+        finally:
             if conn: conn.close()
