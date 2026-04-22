@@ -2,15 +2,23 @@ import streamlit as st
 import psycopg2
 import os
 import pandas as pd
-from dotenv import load_dotenv
 from PIL import Image 
 
-load_dotenv()
-DB_URL = os.getenv("DATABASE_URL")
+# 1. MANEJO DE CREDENCIALES (Secrets para Nube / .env para Local)
+if "DATABASE_URL" in st.secrets:
+    DB_URL = st.secrets["DATABASE_URL"]
+else:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        DB_URL = os.getenv("DATABASE_URL")
+    except:
+        DB_URL = None
 
 def get_db_connection():
     try:
-        return psycopg2.connect(DB_URL, connect_timeout=10, sslmode='require')
+        # sslmode='require' es vital para la conexión con AWS/Supabase
+        return psycopg2.connect(DB_URL, sslmode='require', connect_timeout=10)
     except:
         return None
 
@@ -19,7 +27,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# CSS Limpio solo para la estructura base
+# 2. ESTILOS CSS (Para visibilidad de textos y alertas)
 st.markdown("""
     <style>
     .stApp { background-color: #f4f6f9; }
@@ -29,11 +37,13 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
+    /* Texto que escribes en las cajas en BLANCO */
     .stTextInput input, .stNumberInput input {
         color: white !important;
         -webkit-text-fill-color: white !important;
     }
 
+    /* Textos de la barra lateral en BLANCO */
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] small, [data-testid="stSidebar"] div.stMarkdown {
         color: white !important;
     }
@@ -55,6 +65,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 3. IDENTIDAD VISUAL
 try:
     header_img = Image.open("assets/banco-andino-header.jpg")
     st.image(header_img, use_container_width=True)
@@ -78,6 +89,7 @@ with col_title:
 st.markdown("<p style='color: #2b2b2b; margin-left: 10px;'>Automatización de scoring con confirmación inmediata.</p>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
+# 4. FORMULARIO
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     dni_val = st.text_input("DNI del Solicitante", max_chars=8)
@@ -88,9 +100,9 @@ with col_f2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# 5. LÓGICA DE EVALUACIÓN
 if st.button("Evaluar Solicitud"):
     if not dni_val or not nombre_val or ingresos_val <= 0:
-        # ALERTA ROJA (Caja y letra rojas forzadas por HTML)
         st.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 15px; border-radius: 8px; border: 2px solid #cc0000; font-weight: bold; margin-bottom: 15px;">⚠️ Atención: Complete todos los campos requeridos para proceder.</div>', unsafe_allow_html=True)
     else:
         ratio = ingresos_val / monto_val if monto_val > 0 else 0
@@ -108,16 +120,15 @@ if st.button("Evaluar Solicitud"):
                 conn.close()
 
                 if final_estado == "APROBADO":
-                    # ALERTA VERDE (Éxito)
                     st.markdown(f'<div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 8px; border: 2px solid #155724; font-weight: bold; margin-bottom: 15px;">✅ Solicitud aceptada. El cliente cuenta con un score de {score}.</div>', unsafe_allow_html=True)
                 else:
-                    # ALERTA ROJA OSCURA (Rechazado)
                     st.markdown(f'<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; border: 2px solid #721c24; font-weight: bold; margin-bottom: 15px;">❌ Solicitud denegada. El score obtenido ({score}) no alcanza el mínimo.</div>', unsafe_allow_html=True)
             except:
                 st.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 15px; border-radius: 8px; border: 2px solid #cc0000; font-weight: bold;">⚠️ Error de persistencia en la base de datos cloud.</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 15px; border-radius: 8px; border: 2px solid #cc0000; font-weight: bold;">⚠️ Error de conexión: No se pudo alcanzar el servidor de base de datos AWS.</div>', unsafe_allow_html=True)
 
+# 6. SIDEBAR: ADMINISTRACIÓN
 st.sidebar.markdown("### Administración")
 
 if st.sidebar.checkbox("Visualizar Historial"):
@@ -148,11 +159,12 @@ if st.sidebar.checkbox("Visualizar Historial"):
                 st.sidebar.markdown('<div style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 8px; border: 1px solid #155724; font-weight: bold; margin-bottom: 10px;">✅ Registro eliminado.</div>', unsafe_allow_html=True)
                 st.rerun() 
 
-        except Exception as e:
+        except:
             st.sidebar.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #cc0000; font-weight: bold;">⚠️ Error al leer datos.</div>', unsafe_allow_html=True)
         finally:
-            conn.close()
+            if conn: conn.close()
 
+# 7. SIDEBAR: MÉTRICAS (Resumen de Operaciones)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Resumen de Operaciones")
 
@@ -173,5 +185,8 @@ if conn_metrics:
         col_m1.metric("Total", total)
         col_m2.metric("Aprobados", aprobados)
         
-    except:
-        st.sidebar.caption("No se pudieron cargar las métricas.")
+    except Exception as e:
+        # Esto te dirá si la tabla no existe o hay error en la consulta SQL
+        st.sidebar.markdown(f'<div style="color: #ffcccc; font-size: 12px;">⚠️ Error en métricas: {e}</div>', unsafe_allow_html=True)
+else:
+    st.sidebar.markdown('<div style="color: #ffcccc; font-size: 12px;">⚠️ Sin conexión a la DB.</div>', unsafe_allow_html=True)
