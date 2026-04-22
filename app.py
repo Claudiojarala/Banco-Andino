@@ -156,7 +156,6 @@ if st.sidebar.checkbox("Visualizar Historial"):
                 st.sidebar.markdown('<div style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 8px; border: 1px solid #155724; font-weight: bold; margin-bottom: 10px;">✅ Registro eliminado.</div>', unsafe_allow_html=True)
                 st.rerun() 
 
-        except:
-            st.sidebar.markdown('<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #155724; font-weight: bold;">⚠️ Error al leer datos.</div>', unsafe_allow_html=True)
-        finally:
+       except Exception as e:
+            st.sidebar.markdown(f'<div style="background-color: #ffdddd; color: #cc0000; padding: 10px; border-radius: 8px; border: 1px solid #cc0000; font-weight: bold;">⚠️ Error al leer datos: {e}</div>', unsafe_allow_html=True)
             if conn: conn.close()
