@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # CONFIGURACIÓN DE INFRAESTRUCTURA (CLOUD GOVERNMENT)
 # =========================================================
 load_dotenv()
-DB_URL = os.getenv("DATABASE_URL=postgresql://postgres.ayvcwlgaexdjlnuczycv:Ar8O9eR0avwn4wdS@aws-1-us-east-2.pooler.supabase.com:6543/postgres")
+DB_URL = os.getenv("DATABASE_URL")
 
 
 def get_db_connection():
