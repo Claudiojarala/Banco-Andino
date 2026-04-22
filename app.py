@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from PIL import Image 
 
-# 1. MANEJO DE CREDENCIALES (Secrets para Nube / .env para Local)
+# 1. MANEJO DE CREDENCIALES
 if "DATABASE_URL" in st.secrets:
     DB_URL = st.secrets["DATABASE_URL"]
 else:
@@ -17,7 +17,6 @@ else:
 
 def get_db_connection():
     try:
-        # sslmode='require' es vital para la conexión con AWS/Supabase
         return psycopg2.connect(DB_URL, sslmode='require', connect_timeout=10)
     except:
         return None
@@ -27,7 +26,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. ESTILOS CSS (Para visibilidad de textos y alertas)
+# 2. ESTILOS CSS
 st.markdown("""
     <style>
     .stApp { background-color: #f4f6f9; }
@@ -37,13 +36,11 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Texto que escribes en las cajas en BLANCO */
     .stTextInput input, .stNumberInput input {
         color: white !important;
         -webkit-text-fill-color: white !important;
     }
 
-    /* Textos de la barra lateral en BLANCO */
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] small, [data-testid="stSidebar"] div.stMarkdown {
         color: white !important;
     }
@@ -164,7 +161,7 @@ if st.sidebar.checkbox("Visualizar Historial"):
         finally:
             if conn: conn.close()
 
-# 7. SIDEBAR: MÉTRICAS (Resumen de Operaciones)
+# 7. SIDEBAR: MÉTRICAS (CORREGIDO)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Resumen de Operaciones")
 
@@ -172,11 +169,16 @@ conn_metrics = get_db_connection()
 if conn_metrics:
     try:
         cur = conn_metrics.cursor()
-        cur.execute("SELECT COUNT(*) FROM solicitudes")
-        total = cur.fetchone()
         
+        # Obtenemos total y convertimos explícitamente a entero
+        cur.execute("SELECT COUNT(*) FROM solicitudes")
+        res_total = cur.fetchone()
+        total = int(res_total) if res_total else 0
+        
+        # Obtenemos aprobados y convertimos explícitamente a entero
         cur.execute("SELECT COUNT(*) FROM solicitudes WHERE estado = 'APROBADO'")
-        aprobados = cur.fetchone()
+        res_aprob = cur.fetchone()
+        aprobados = int(res_aprob) if res_aprob else 0
         
         cur.close()
         conn_metrics.close()
@@ -186,7 +188,6 @@ if conn_metrics:
         col_m2.metric("Aprobados", aprobados)
         
     except Exception as e:
-        # Esto te dirá si la tabla no existe o hay error en la consulta SQL
         st.sidebar.markdown(f'<div style="color: #ffcccc; font-size: 12px;">⚠️ Error en métricas: {e}</div>', unsafe_allow_html=True)
 else:
     st.sidebar.markdown('<div style="color: #ffcccc; font-size: 12px;">⚠️ Sin conexión a la DB.</div>', unsafe_allow_html=True)
